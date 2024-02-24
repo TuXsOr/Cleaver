@@ -11,6 +11,8 @@ namespace Cleaver.Classes
             foreach (byte[] chunk in  chunkList)
             {
                 Debug.WriteLine($"Writing Chunk: {index}");
+                
+
                 File.WriteAllBytes($"{Directory.GetCurrentDirectory()}\\part{index}", chunk);
                 index++;
             }

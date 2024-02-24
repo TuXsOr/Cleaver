@@ -1,5 +1,6 @@
-﻿using System.Security.Cryptography;
-
+﻿using System.Collections.Immutable;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Cleaver.Classes
 {
@@ -25,11 +26,10 @@ namespace Cleaver.Classes
 
         public byte[] EncryptBytes(byte[] inBytes, byte[] key, byte[] iv)
         {
-            byte[] outBuffer = new byte[32];
             ICryptoTransform enc = encryptor.CreateEncryptor(key, iv);
-            enc.TransformFinalBlock(inBytes, 0, inBytes.Length);
+            byte[] result = enc.TransformFinalBlock(inBytes, 0, inBytes.Length);
 
-            return outBuffer;
+            return result;
         }
 
 
@@ -40,7 +40,20 @@ namespace Cleaver.Classes
 
             foreach (byte[] chunk in inBytes.Chunk(ChunkSize))
             {
-                chunks.Add(chunk);
+                byte[] header = Encoding.UTF8.GetBytes($"!&!{index}");
+                List<byte> buffer = new List<byte>();
+
+                foreach (byte curByte in chunk)  // add bytes to list
+                {
+                    buffer.Add(curByte);
+                }
+                foreach (byte headerByte in header)  // add header to list
+                {
+                    buffer.Add(headerByte);
+                }
+
+                chunks.Add(buffer.ToArray());
+
                 index++;
             }
 

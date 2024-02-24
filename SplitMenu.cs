@@ -52,7 +52,7 @@ namespace Cleaver
                 byte[] key = instance.splitter.GetHash(Encoding.UTF8.GetBytes(passwordBox.Text));
                 byte[] iv = new byte[16];
 
-                bool success = instance.SplitFile(TargetFileDialogue.FileName, (int)Math.Ceiling(readFile!.Length / numChunksCounter.Value), key, iv);
+                bool success = instance.SplitFile(TargetFileDialogue.FileName, (int)Math.Ceiling(readFile!.Length / (numChunksCounter.Value - 1)), key, iv);
                 if (success)
                 {
                     Debug.WriteLine("Sucessfully Split File");
@@ -63,11 +63,19 @@ namespace Cleaver
             Enabled = true;
         }
 
+
+        public void UpdateMessage(string inMessage, Color textColor)
+        {
+            statusText.ForeColor = textColor;
+            statusText.Text = inMessage;
+            statusText.Visible = true;
+        }
+
         private void chunkSizeCounter_ValueChanged(object sender, EventArgs e)
         {
             if (readFile != null)
             {
-                numChunksCounter.Value = (int)Math.Ceiling(readFile.Length / chunkSizeCounter.Value);
+                numChunksCounter.Value = (int)Math.Ceiling(readFile.Length / chunkSizeCounter.Value) + 1;
             }
         }
 
@@ -75,7 +83,7 @@ namespace Cleaver
         {
             if (readFile != null)
             {
-                chunkSizeCounter.Value = Math.Ceiling(readFile.Length / numChunksCounter.Value);
+                chunkSizeCounter.Value = Math.Ceiling(readFile.Length / (numChunksCounter.Value - 1));
             }
         }
 

@@ -21,13 +21,31 @@ namespace Cleaver.Classes
         {
             try
             {
+                menu.UpdateMessage("Reading File", Color.DarkCyan);
+
                 byte[] fileBytes = File.ReadAllBytes(filePath);
+
                 byte[] encryptedFile = splitter.EncryptBytes(fileBytes, key, iv);
-                
 
 
                 List<byte[]> chunks = splitter.SplitBytes(encryptedFile, chunkSize);
-                FileManager.WriteChunks(chunks);
+                int index = 0;
+
+                List<byte[]> endList = new List<byte[]>();
+
+                foreach (byte[] chunk in chunks)
+                {
+                    Debug.WriteLine($"Encrypting Chunk {index}");
+                    menu.UpdateMessage($"Encrypting Chunk {index + 1}", Color.DarkCyan);
+
+                    byte[] encBytes = splitter.EncryptBytes(chunk, key, iv);
+                    endList.Add(encBytes);
+                    index++;
+                }
+
+                FileManager.WriteChunks(endList);
+                menu.UpdateMessage("Finished Splitting File!", Color.DarkGreen);
+                
                 return true;
             }
             catch (Exception ex)

@@ -38,6 +38,7 @@
             numChunksCounter = new NumericUpDown();
             passwordBox = new TextBox();
             label2 = new Label();
+            statusText = new Label();
             ((System.ComponentModel.ISupportInitialize)chunkSizeCounter).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numChunksCounter).BeginInit();
             SuspendLayout();
@@ -134,11 +135,23 @@
             label2.TabIndex = 8;
             label2.Text = "Password:";
             // 
+            // statusText
+            // 
+            statusText.AutoSize = true;
+            statusText.Font = new Font("Segoe UI", 12F, FontStyle.Italic, GraphicsUnit.Point);
+            statusText.Location = new Point(103, 239);
+            statusText.Name = "statusText";
+            statusText.Size = new Size(35, 21);
+            statusText.TabIndex = 9;
+            statusText.Text = "text";
+            statusText.Visible = false;
+            // 
             // SplitMenu
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(494, 293);
+            Controls.Add(statusText);
             Controls.Add(label2);
             Controls.Add(passwordBox);
             Controls.Add(numChunksCounter);
@@ -170,5 +183,6 @@
         private NumericUpDown numChunksCounter;
         private TextBox passwordBox;
         private Label label2;
+        internal Label statusText;
     }
 }

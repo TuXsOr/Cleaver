@@ -26,5 +26,10 @@ namespace Cleaver
         {
             instance.SwitchMenu("split");
         }
+
+        private void reconstructButton_Click(object sender, EventArgs e)
+        {
+            instance.SwitchMenu("rebuild");
+        }
     }
 }

@@ -5,15 +5,15 @@ namespace Cleaver.Classes
 {
     internal static class FileManager
     {
-        public static void WriteChunks(List<byte[]> chunkList)
+        public static void WriteChunks(List<byte[]> chunkList, bool test)
         {
             int index = 0;
-            foreach (byte[] chunk in  chunkList)
+            foreach (byte[] chunk in chunkList)
             {
                 Debug.WriteLine($"Writing Chunk: {index}");
-                
 
-                File.WriteAllBytes($"{Directory.GetCurrentDirectory()}\\part{index}", chunk);
+                if (test) { File.WriteAllBytes($"{Directory.GetCurrentDirectory()}\\decrypted-part{index}", chunk); }
+                else { File.WriteAllBytes($"{Directory.GetCurrentDirectory()}\\part{index}", chunk); }
                 index++;
             }
         }

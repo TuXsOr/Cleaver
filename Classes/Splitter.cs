@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+﻿using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -24,12 +24,41 @@ namespace Cleaver.Classes
         public byte[] GetHash(byte[] inBytes) { return sha256.ComputeHash(inBytes, 0, inBytes.Length); }
 
 
+        public byte[] DecryptBytes(byte[] inBytes, byte[] key, byte[] iv)
+        {
+            using (ICryptoTransform decryptor = encryptor.CreateDecryptor(key, iv))
+            {
+                return decryptor.TransformFinalBlock(inBytes, 0, inBytes.Length);
+            }
+        }
+
+
+        public List<byte[]>? DecryptChunks(List<byte[]> inChunks, byte[] key, byte[] iv)
+        {
+            List<byte[]> decryptedParts = new List<byte[]>();
+            try
+            {
+                using (ICryptoTransform decryptor = encryptor.CreateDecryptor(key, iv))
+                {
+                    foreach (byte[] partBytes in inChunks)
+                    {
+                        decryptedParts.Add(decryptor.TransformFinalBlock(partBytes, 0, partBytes.Length));
+                    }
+                }
+            }
+            catch { return null; }
+
+            return decryptedParts;
+        }
+
+
         public byte[] EncryptBytes(byte[] inBytes, byte[] key, byte[] iv)
         {
-            ICryptoTransform enc = encryptor.CreateEncryptor(key, iv);
-            byte[] result = enc.TransformFinalBlock(inBytes, 0, inBytes.Length);
-
-            return result;
+            using (ICryptoTransform enc = encryptor.CreateEncryptor(key, iv) )
+            {
+                byte[] result = enc.TransformFinalBlock(inBytes, 0, inBytes.Length);
+                return result;
+            }
         }
 
 

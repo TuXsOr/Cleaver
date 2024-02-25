@@ -50,6 +50,7 @@
             reconstructButton.TabIndex = 1;
             reconstructButton.Text = "Reconstruct";
             reconstructButton.UseVisualStyleBackColor = true;
+            reconstructButton.Click += reconstructButton_Click;
             // 
             // SelectMenu
             // 

@@ -1,5 +1,6 @@
 ﻿
 using System.Diagnostics;
+using System.Text;
 
 namespace Cleaver.Classes
 {
@@ -8,12 +9,14 @@ namespace Cleaver.Classes
         internal Splitter splitter;
         internal SplitMenu menu;
         internal SelectMenu selectMenu;
+        internal RebuildMenu rebuildMenu;
 
         public AppInstance()
         {
             splitter = new Splitter(this);
             menu = new SplitMenu(this);
             selectMenu = new SelectMenu(this);
+            rebuildMenu = new RebuildMenu(this);
             selectMenu.Show();
         }
 
@@ -43,7 +46,7 @@ namespace Cleaver.Classes
                     index++;
                 }
 
-                FileManager.WriteChunks(endList);
+                FileManager.WriteChunks(endList, false);
                 menu.UpdateMessage("Finished Splitting File!", Color.DarkGreen);
                 
                 return true;
@@ -56,10 +59,66 @@ namespace Cleaver.Classes
         }
 
 
+        public bool ReconstructFile(List<string> partPaths, string password)
+        {
+            rebuildMenu.UpdateDisplayMessage("Loading Parts...", Color.CadetBlue);
+
+            List<byte[]> readFiles = new List<byte[]>();
+
+            foreach (string partPath in partPaths)
+            {
+                if (!File.Exists(partPath)) { continue; }
+
+                readFiles.Add(File.ReadAllBytes(partPath));
+            }
+
+            List<byte[]>? decryptedChunks = splitter.DecryptChunks(readFiles, splitter.GetHash(Encoding.UTF8.GetBytes(password)), new byte[16]);
+            if (decryptedChunks == null) { return false; }
+
+            bool isSorted = false;
+            List<byte[]> sortedChunks = new List<byte[]>();
+            int curPart = 0;
+
+            while (!isSorted)
+            {
+                foreach (byte[] chunk in decryptedChunks)
+                {
+                    string chunkString = Encoding.UTF8.GetString(chunk);
+                    string[] parsedChunk = chunkString.Split(new string[] { "!&!" }, StringSplitOptions.None);
+
+                    if (int.Parse(parsedChunk[1]) == curPart) { sortedChunks.Add(Encoding.UTF8.GetBytes(parsedChunk[0])); curPart++; Debug.WriteLine($"Added Chunk: {parsedChunk[1]}"); }
+                }
+                if (sortedChunks.Count >= decryptedChunks.Count) { isSorted = true; }
+            }
+            rebuildMenu.UpdateDisplayMessage("Re-assembling File..", Color.CadetBlue);
+
+            List<byte> combinedBytes = new List<byte>();
+
+            foreach (byte[] chunk in decryptedChunks)
+            {
+                foreach (byte b in chunk)
+                {
+                    combinedBytes.Add(b);
+                }
+            }
+
+            byte[] combinedFile = combinedBytes.ToArray();
+            File.WriteAllBytes("C:\\users\\someone\\desktop\\outFile", combinedFile);
+            // byte[] originalFile =  splitter.DecryptBytes(combinedFile, splitter.GetHash(Encoding.UTF8.GetBytes(password)), new byte[16]);
+            // File.WriteAllBytes($"{Directory.GetCurrentDirectory()}\\reconstructed_file", originalFile);
+
+            return true;
+        }
+
+
         public void HideAllWindows()
         {
             selectMenu.Hide();
             menu.Hide();
+            rebuildMenu.Hide();
+            selectMenu = new SelectMenu(this);
+            menu = new SplitMenu(this);
+            rebuildMenu = new RebuildMenu(this);
         }
 
 
@@ -73,10 +132,12 @@ namespace Cleaver.Classes
                     if (selectMenu == null) { selectMenu = new SelectMenu(this); }
                     selectMenu.Show();
                     break;
-                case "reconstruct":
-                    // HideAllWindows();
-                    // Insert menu here
+
+                case "rebuild":
+                    HideAllWindows();
+                    rebuildMenu.Show();
                     break;
+
                 case "split":
                     if (menu.Disposing || menu == null) { menu = new SplitMenu(this); }
                     menu.Show();

@@ -28,10 +28,10 @@ namespace Cleaver.Classes
 
                 byte[] fileBytes = File.ReadAllBytes(filePath);
 
-                byte[] encryptedFile = splitter.EncryptBytes(fileBytes, key, iv);
+                // byte[] encryptedFile = splitter.EncryptBytes(fileBytes, key, iv);
 
 
-                List<byte[]> chunks = splitter.SplitBytes(encryptedFile, chunkSize);
+                List<byte[]> chunks = splitter.SplitBytes(fileBytes, chunkSize);
                 int index = 0;
 
                 List<byte[]> endList = new List<byte[]>();
@@ -59,55 +59,105 @@ namespace Cleaver.Classes
         }
 
 
-        public bool ReconstructFile(List<string> partPaths, string password)
+        public async Task ReconstructFile(List<string> partPaths, string password)
         {
-            rebuildMenu.UpdateDisplayMessage("Loading Parts...", Color.CadetBlue);
 
+            // Reading Part Files
             List<byte[]> readFiles = new List<byte[]>();
-
-            foreach (string partPath in partPaths)
+            foreach (string part in partPaths)
             {
-                if (!File.Exists(partPath)) { continue; }
-
-                readFiles.Add(File.ReadAllBytes(partPath));
+                byte[] curFileBytes = await File.ReadAllBytesAsync(part);
+                readFiles.Add(curFileBytes);
             }
 
-            List<byte[]>? decryptedChunks = splitter.DecryptChunks(readFiles, splitter.GetHash(Encoding.UTF8.GetBytes(password)), new byte[16]);
-            if (decryptedChunks == null) { return false; }
 
-            bool isSorted = false;
-            List<byte[]> sortedChunks = new List<byte[]>();
-            int curPart = 0;
+            // Get entered password
+            byte[] key = splitter.GetHash(Encoding.UTF8.GetBytes(password));
 
-            while (!isSorted)
+
+            // Decrypting parts
+            List<byte[]> decryptedFiles = new List<byte[]>();
+            foreach (byte[] file in readFiles)
             {
-                foreach (byte[] chunk in decryptedChunks)
+                byte[] decryptedFile = splitter.DecryptBytes(file, key, new byte[16]);
+                decryptedFiles.Add(decryptedFile);
+            }
+
+
+            // Sort Decrypted parts
+            List<byte[]> sortedParts = new List<byte[]>();
+            bool sorted = false;
+            int targetChunk = 0;
+            while (!sorted)  // Sort Loop
+            {
+                Debug.WriteLine("Round of sorting");
+                foreach (byte[] part in decryptedFiles)
                 {
-                    string chunkString = Encoding.UTF8.GetString(chunk);
-                    string[] parsedChunk = chunkString.Split(new string[] { "!&!" }, StringSplitOptions.None);
+                    int headerIndex = -1;
 
-                    if (int.Parse(parsedChunk[1]) == curPart) { sortedChunks.Add(Encoding.UTF8.GetBytes(parsedChunk[0])); curPart++; Debug.WriteLine($"Added Chunk: {parsedChunk[1]}"); }
+                    for (int offset = part.Length - 4; offset > 0; offset--) // Search for header
+                    {
+                        string header = "!&!";
+                        byte[] searchSegment = new byte[] { part[offset], part[offset + 1], part[offset + 2] };
+
+                        if (Encoding.UTF8.GetString(searchSegment) == header)
+                        {
+                            Debug.WriteLine("Found Header");
+                            headerIndex = offset;
+                            break;
+                        }
+                    }
+                    if (headerIndex == -1) { Debug.WriteLine("Failed to find header info"); }
+
+
+                    // Parse index
+                    Debug.WriteLine($"Parsing Index. Index Len: {(part.Length) - (headerIndex + 3)}");
+                    byte[] indexBytes = new byte[(part.Length) - (headerIndex + 3)];
+                    int tempIndex = 0;
+                    for (int i = headerIndex + 3; i < part.Length; i++)
+                    {
+                        indexBytes[tempIndex] = part[i];
+                        tempIndex++;
+                    }
+                    int partIndex = int.Parse(Encoding.UTF8.GetString(indexBytes));
+
+
+                    if (partIndex == targetChunk) // if is the same index as the target chunk
+                    {
+                        // Remove Header from Chunk
+                        Debug.WriteLine("Removing Header From Binary");
+                        byte[] tmpBuffer = new byte[headerIndex + 1];
+                        for (int i = 0; i < tmpBuffer.Length; i++)
+                        {
+                            tmpBuffer[i] = part[i];
+                        }
+                        targetChunk++;
+                        sortedParts.Add(tmpBuffer);
+                    }
                 }
-                if (sortedChunks.Count >= decryptedChunks.Count) { isSorted = true; }
+                if (sortedParts.Count == decryptedFiles.Count) { sorted = true; }
             }
-            rebuildMenu.UpdateDisplayMessage("Re-assembling File..", Color.CadetBlue);
+            Debug.WriteLine("Sorted");
 
-            List<byte> combinedBytes = new List<byte>();
 
-            foreach (byte[] chunk in decryptedChunks)
+            // Recombine part binaries
+            List<byte> combinedFile = new List<byte>();
+            foreach (byte[] part in sortedParts)
             {
-                foreach (byte b in chunk)
+                foreach (byte b in part)
                 {
-                    combinedBytes.Add(b);
+                    combinedFile.Add(b);
                 }
             }
+            Debug.WriteLine("Combined File");
 
-            byte[] combinedFile = combinedBytes.ToArray();
-            File.WriteAllBytes("C:\\users\\someone\\desktop\\outFile", combinedFile);
-            // byte[] originalFile =  splitter.DecryptBytes(combinedFile, splitter.GetHash(Encoding.UTF8.GetBytes(password)), new byte[16]);
-            // File.WriteAllBytes($"{Directory.GetCurrentDirectory()}\\reconstructed_file", originalFile);
+            // Decrypt Combined File
+            //byte[] finalFile = splitter.DecryptBytes(combinedFile.ToArray(), key, new byte[16]);
 
-            return true;
+            // Temporarily removed first layer of encryption
+
+            File.WriteAllBytes($"{Directory.GetCurrentDirectory()}\\CombinedFile", combinedFile.ToArray());
+            Debug.WriteLine("Wrote End File");
         }
 
 

@@ -31,5 +31,10 @@ namespace Cleaver
         {
             instance.SwitchMenu("rebuild");
         }
+
+        private void SelectMenu_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            instance.Close();
+        }
     }
 }

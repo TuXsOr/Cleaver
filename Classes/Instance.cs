@@ -195,6 +195,6 @@ namespace Cleaver.Classes
             }
         }
 
-        internal void Close() { ExitThread(); }
+        internal void Close() { Application.Exit(); }
     }
 }

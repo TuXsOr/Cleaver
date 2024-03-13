@@ -63,6 +63,7 @@
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Name = "SelectMenu";
             Text = "Cleaver";
+            FormClosed += SelectMenu_FormClosed;
             ResumeLayout(false);
         }
 
